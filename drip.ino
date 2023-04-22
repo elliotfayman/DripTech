@@ -7,7 +7,7 @@ int index = 0;
 float rate[] = {0, 0, 0, 0, 0};
 int kindex = 0;
 float EMA_a_low = 0.1;    //initialization of EMA alpha
-float EMA_a_high = 0.4;
+float EMA_a_high = 0.3;
 int EMA_S_low = 0;        //initialization of EMA S
 int EMA_S_high = 0;
 int highpass = 0;
@@ -45,7 +45,7 @@ void setup(){
   EMA_S_high = sum;
   total+=average1();
   totalTicks++;
-  
+  for(int x = 0; x<size; x++) values[x] = average1();
 }
 
 void loop(){
@@ -73,12 +73,10 @@ void loop(){
   //kindex = (kindex + 1) % 5; 
   
   //prevbandpass = bandpass;
-  if((total/totalTicks)<(average1()-30)){
+  if(abs((total/totalTicks)-average1())<100){
     total+=average1();
     totalTicks++;
-    //Serial.println("))))))))))))))))))))))))))))))))))))))");
-    //Serial.println(average1());
-    //Serial.println("))))))))))))))))))))))))))))))))))))))");
+    //Serial.println("---------------------------");
   }
   
   //Serial.println(abs(average2() - (total/totalTicks)));
@@ -86,27 +84,27 @@ void loop(){
   //Serial.println(total/totalTicks);
   Serial.println(curVal);
 
-  if(curVal>40) {
+  if(curVal>80) {
     locations[locIndex] = totalClocks;
     locIndex = (locIndex+1)%3;
     int period1 = locations[(locIndex-1)%3] - locations[(locIndex-2)%3];
     int period2 = locations[locIndex] - locations[(locIndex-1)%3];
     int difference = abs(period1-period2);
-
-    if(difference<20)  positives++;
+    if(difference<50)  positives++;
     else {
       analogWrite(pinNoise, 0);
     //positives--;
     }
   }
 
-  if(positives>20) {
+  if(positives>5) {
     analogWrite(pinNoise, 3);
     lastTimeOn = millis() / 10000;
   }
   if(totalClocks%100==0) {
     if(positives>0) totalOnTime += millis() / 1000 - lastTimeOn;
     positives = 0;
+    analogWrite(pinNoise, 0);
   }
   totalClocks++;
   delay(30);
