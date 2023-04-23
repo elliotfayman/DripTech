@@ -1,7 +1,11 @@
-# DripTech
 
 
+<p align="center">
+  <img src="DripTechLogo.png" width="200">
+</p>
 This program is designed for a smart water drip sensor that uses advanced signal processing to distinguish dripping noise from background noise, helping to identify leaks and conserve water. The program runs on an Arduino microcontroller and employs various techniques to isolate and identify dripping noise.
+
+---
 
 ## Program Functionality
 
@@ -11,13 +15,19 @@ To further isolate the signal, the program calculates a running average of the e
 
 A cutoff noise amplitude is used to determine whether a sound is potentially the actual dripping noise of the sink. The program records the time of each detected signal and continues to do so until it has captured three distinct times. If the time intervals between the first and second point and the second and third point are similar, it confirms that periodic noise is present. If multiple instances of periodic noise are detected, it can conclude that dripping noise is present.
 
+---
+
 ## Additional Features
 
 The smart water sensor also includes a buzzer to alert household members when dripping water is detected, and an LCD screen that displays the duration of the water leak in seconds and the volume of water wasted in milliliters. This dual-screen feature allows users to easily monitor both the duration and quantity of the water leak, providing valuable insights to help them take action and prevent further waste.
 
+---
+
 ## Electric Schematic
 
 ![Electric Schematic](DripTech_Electric_Schematic.png)
+
+---
 
 ## Authors
 
