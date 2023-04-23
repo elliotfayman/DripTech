@@ -17,7 +17,9 @@ The smart water sensor also includes a buzzer to alert household members when dr
 
 ## Electric Schematic
 
-## Author
+![Electric Schematic](DripTech_Electric_Schematic.png)
+
+## Authors
 
 Elliot Fayman, Shilpa Bojjireddy, Rajashekar Vennavelli, and Morgan Barrett.
 
