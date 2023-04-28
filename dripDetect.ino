@@ -1,67 +1,142 @@
-/*
-  LiquidCrystal Library - Hello World
-
- Demonstrates the use a 16x2 LCD display.  The LiquidCrystal
- library works with all LCD displays that are compatible with the
- Hitachi HD44780 driver. There are many of them out there, and you
- can usually tell them by the 16-pin interface.
-
- This sketch prints "Hello World!" to the LCD
- and shows the time.
-
-  The circuit:
- * LCD RS pin to digital pin 12
- * LCD Enable pin to digital pin 11
- * LCD D4 pin to digital pin 5
- * LCD D5 pin to digital pin 4
- * LCD D6 pin to digital pin 3
- * LCD D7 pin to digital pin 2
- * LCD R/W pin to ground
- * LCD VSS pin to ground
- * LCD VCC pin to 5V
- * 10K resistor:
- * ends to +5V and ground
- * wiper to LCD VO pin (pin 3)
-
- Library originally added 18 Apr 2008
- by David A. Mellis
- library modified 5 Jul 2009
- by Limor Fried (http://www.ladyada.net)
- example added 9 Jul 2009
- by Tom Igoe
- modified 22 Nov 2010
- by Tom Igoe
- modified 7 Nov 2016
- by Arturo Guadalupi
-
- This example code is in the public domain.
-
- http://www.arduino.cc/en/Tutorial/LiquidCrystalHelloWorld
-
-*/
-
-// include the library code:
+const int pinADC = A0;
+const int pinNoise = 9;
+const int size = 12;
+int prevbandpass = 0;
+int values[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int index = 0;
+float rate[] = {0, 0, 0, 0, 0};
+int kindex = 0;
+float EMA_a_low = 0.1;    //initialization of EMA alpha
+float EMA_a_high = 0.3;
+int EMA_S_low = 0;        //initialization of EMA S
+int EMA_S_high = 0;
+int highpass = 0;
+int bandpass = 0;
+double total = 0;
+long totalTicks = 0;
+long totalClocks = 0;
+long locations[] =  {0, 0, 0};
+int locIndex = 0;
+int positives;
+float totalOnTime = 0;
+long lastTimeOn = 0;
+//**********************************
 #include <LiquidCrystal.h>
-
-// initialize the library by associating any needed LCD interface pin
-// with the arduino pin number it is connected to
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2, V0 = 6;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-
-void setup() {
-  // set up the LCD's number of columns and rows:
+int current_slct = 0; 
+double waterDumped = 0.0;
+void setup(){
+  pinMode(pinNoise, OUTPUT);
   analogWrite(V0, 160);
   lcd.begin(16, 2);
 
-  // Print a message to the LCD.
   lcd.print("hello, world!");
+
+  Serial.begin(115200);
+  long sum = 0;
+  for(int i = 0; i<32; i++){
+    sum += analogRead(pinADC);
+  }
+
+  sum>>=5;
+  EMA_S_low = sum;
+
+  EMA_S_high = sum;
+  total+=average1();
+  totalTicks++;
+  for(int x = 0; x<size; x++) values[x] = average1();
 }
 
-void loop() {
-  // set the cursor to column 0, line 1
-  // (note: line 1 is the second row, since counting begins with 0):
+void loop(){
   lcd.setCursor(0, 1);
   // print the number of seconds since reset:
-  lcd.print(millis() / 1000);
+  lcd.print(totalOnTime);
+  long sum = 0;
+  for(int i = 0; i<32; i++){
+    sum += analogRead(pinADC);
+  }
+
+  sum>>=5;
+  values[index] = sum;
+  index = (index + 1) % size; 
+  double val = average1();
+  EMA_S_low = (EMA_a_low*val) + ((1-EMA_a_low)*EMA_S_low);  //run the EMA
+  EMA_S_high = (EMA_a_high*val) + ((1-EMA_a_high)*EMA_S_high);
+  
+  
+  bandpass = EMA_S_high - EMA_S_low;      //find the band-pass
+  //Serial.print("Value is: ");
+  //Serial.println(bandpass);
+  // Serial.print("Rate of Change is: ");
+  //rate[kindex] = abs((bandpass-prevbandpass)/30.0);
+  //kindex = (kindex + 1) % 5; 
+  
+  //prevbandpass = bandpass;
+  //100
+  if(abs((total/totalTicks)-average1())<180){
+    total+=average1();
+    totalTicks++;
+    //Serial.println((total/totalTicks));
+    //Serial.println("---------------------------");
+  }
+  
+  //Serial.println(abs(average2() - (total/totalTicks)));
+  double curVal = abs(average1() - (total/totalTicks));
+  //Serial.println(total/totalTicks);
+  Serial.println(curVal);
+
+  if(curVal>50) {
+    locations[locIndex] = totalClocks;
+    locIndex = (locIndex+1)%3;
+    int period1 = locations[(locIndex-1)%3] - locations[(locIndex-2)%3];
+    int period2 = locations[locIndex] - locations[(locIndex-1)%3];
+    int difference = abs(period1-period2);
+    if(difference<40)  {
+      positives++;
+      totalOnTime+=0.3;
+      waterDumped +=0.05*3;
+    }
+    else {
+      analogWrite(pinNoise, 0);
+    //positives--;
+    }
+  }
+
+  if(positives>5) {
+    analogWrite(pinNoise, 20);
+    lastTimeOn = millis() / 10000;
+  }
+  if(totalClocks%100==0) {
+    //if(positives>0) totalOnTime += millis() / 1000 - lastTimeOn;
+    positives = 0;
+    analogWrite(pinNoise, 0);
+  }
+  lcd.setCursor(0, 0);
+  current_slct = analogRead(A3);
+  if((current_slct/520)>0) {
+    lcd.print("Time Dripping:   ");
+    lcd.setCursor(0, 1);
+    lcd.print(totalOnTime);
+    lcd.print("        ");
+  }
+  else {
+    lcd.print("Water Used:   ");
+    lcd.setCursor(0, 1);
+    lcd.print(waterDumped);
+    lcd.print("        ");
+  }
+  totalClocks++;
+  delay(30);
 }
 
+double average1(){
+  int sum = 0;
+  for(int j = 0; j<size; j++) sum+=values[j];
+  return (sum + 0.0)/size;
+}
+double average2(){
+  double sum = 0;
+  for(int j = 0; j<5; j++) sum+=rate[j];
+  return (sum + 0.0)/3.0;
+}
