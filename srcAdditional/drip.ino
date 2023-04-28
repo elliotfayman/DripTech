@@ -5,10 +5,9 @@ int prevbandpass = 0;
 int values[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int index = 0;
 
-float EMA_a_low = 0.1, EMA_a_high = 0;    //initialization of EMA alpha
 
-int EMA_S_low = 0, EMA_S_high = 0;        //initialization of EMA S
-
+float EMA_a_low = 0.1, EMA_a_high = 0;    
+int EMA_S_low = 0, EMA_S_high = 0;       
 int highpass = 0;
 int bandpass = 0;
 
@@ -16,6 +15,8 @@ int bandpass = 0;
 double total = 0;
 long totalTicks = 0;
 long totalClocks = 0;
+
+
 long locations[] =  {0, 0, 0};
 int locIndex = 0;
 int positives;
